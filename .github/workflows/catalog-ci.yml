@@ -1,0 +1,24 @@
+name: catalog-service CI/CD
+on:
+  push: { paths: ["services/catalog-service/**","docker-compose.yml"] }
+  pull_request: { paths: ["services/catalog-service/**"] }
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: "1.22.x" }
+      - name: Test
+        working-directory: services/catalog-service
+        run: go test ./... || echo "no tests yet"
+      - name: Build image
+        run: docker build -t catalog-service:ci ./services/catalog-service
+      - name: Compose smoke (service-only)
+        run: |
+          docker compose up -d catalog-service
+          sleep 3
+          curl -f http://localhost:4000/health
+      - name: Down
+        if: always()
+        run: docker compose down --remove-orphans

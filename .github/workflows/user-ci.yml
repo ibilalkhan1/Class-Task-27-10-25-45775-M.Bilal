@@ -1,0 +1,36 @@
+name: user-service CI/CD
+on:
+  push: { paths: ["services/user-service/**","docker-compose.yml"] }
+  pull_request: { paths: ["services/user-service/**"] }
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: rootpass
+          MYSQL_DATABASE: usersdb
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -prootpass"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - name: Install & Test
+        working-directory: services/user-service
+        run: |
+          npm ci || npm install
+          npm test
+      - name: Build image
+        run: docker build -t user-service:ci ./services/user-service
+      - name: Compose smoke (service-only)
+        run: |
+          docker compose up -d user-service
+          sleep 5
+          curl -f http://localhost:3000/health
+      - name: Down
+        if: always()
+        run: docker compose down --remove-orphans

@@ -1,0 +1,19 @@
+name: Deploy (Compose on Runner)
+on:
+  push: { branches: ["main"] }
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build & Up
+        run: |
+          docker compose up -d --build
+          sleep 6
+          curl -f http://localhost:3000/health
+          curl -f http://localhost:4000/health
+      - name: Show containers
+        run: docker ps
+      - name: Tear down (ephemeral staging)
+        if: always()
+        run: docker compose down --remove-orphans
