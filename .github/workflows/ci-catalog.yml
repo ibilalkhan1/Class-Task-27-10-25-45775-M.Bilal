@@ -1,0 +1,28 @@
+name: CI - catalog-service
+on:
+  push:
+    paths:
+      - 'services/catalog-service/**'
+      - '.github/workflows/ci-catalog.yml'
+  pull_request:
+    paths:
+      - 'services/catalog-service/**'
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+      - name: Go build
+        working-directory: services/catalog-service
+        run: |
+          go mod tidy
+          go build ./src/main.go
+      - name: Go test
+        working-directory: services/catalog-service
+        run: go test ./...
+      - name: Docker build
+        working-directory: services/catalog-service
+        run: docker build -t catalog-service:ci .
