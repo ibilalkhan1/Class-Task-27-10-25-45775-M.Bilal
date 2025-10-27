@@ -1,0 +1,2 @@
+- JSON storage is not concurrent-safe for prod (ok for demo).
+- No token middleware; simple token-in-body for brevity.

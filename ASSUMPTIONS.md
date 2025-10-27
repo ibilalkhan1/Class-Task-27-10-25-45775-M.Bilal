@@ -1,0 +1,3 @@
+- Password reset is a stub (no email).
+- Catalog uses JSON file storage to keep setup fast.
+- CD is simulated via docker-compose on the CI runner.
