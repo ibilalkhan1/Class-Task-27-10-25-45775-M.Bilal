@@ -1,30 +1,35 @@
+version: "3.8"
+
 services:
   mysql:
     image: mysql:8.4
+    container_name: class-task-27-10-25-45775-mbilal-mysql-1
     environment:
       MYSQL_ROOT_PASSWORD: rootpass
       MYSQL_DATABASE: usersdb
-    ports: ["3306:3306"]
+    ports:
+      - "3307:3306"          # 👈 fixed: array with dash
     healthcheck:
-      test: ["CMD","mysqladmin","ping","-h","localhost","-prootpass"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 5s
-      retries: 20
+      timeout: 3s
+      retries: 5
 
   user-service:
     build: ./services/user-service
-    environment:
-      MYSQL_HOST: mysql
-      MYSQL_USER: root
-      MYSQL_PASSWORD: rootpass
-      MYSQL_DB: usersdb
-      JWT_SECRET: supersecret
     depends_on:
       mysql:
         condition: service_healthy
-    ports: ["3000:3000"]
+    ports:
+      - "3000:3000"
 
   catalog-service:
     build: ./services/catalog-service
     volumes:
       - ./data:/data
-    ports: ["4000:4000"]
+    ports:
+      - "4000:4000"
+
+networks:
+  default:
+    name: class-task-27-10-25-45775-mbilal_default
