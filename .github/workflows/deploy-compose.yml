@@ -1,19 +1,42 @@
 name: Deploy (Compose on Runner)
 on:
   push: { branches: ["main"] }
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Build & Up
         run: |
+          set -e
           docker compose up -d --build
-          sleep 6
+
+      - name: Wait for services (user + catalog)
+        run: |
+          set -e
+          for i in {1..60}; do
+            U=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/health || true)
+            C=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:4000/health || true)
+            echo "attempt $i user:$U catalog:$C"
+            if [ "$U" = "200" ] && [ "$C" = "200" ]; then
+              echo "services ready"; break
+            fi
+            sleep 2
+            if [ "$i" = "60" ]; then echo "services not ready in time"; exit 1; fi
+          done
           curl -f http://localhost:3000/health
           curl -f http://localhost:4000/health
+
       - name: Show containers
         run: docker ps
+
+      - name: Logs on failure
+        if: failure()
+        run: |
+          docker compose logs --no-color --tail=200 || true
+
       - name: Tear down (ephemeral staging)
         if: always()
         run: docker compose down --remove-orphans
